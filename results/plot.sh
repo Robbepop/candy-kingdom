@@ -42,7 +42,7 @@ echo "set arrow from 5000,1 to 5000,6000 nohead ls 1"
 echo "replot f(x) ls 2 notitle"
 echo "replot g(x) lc 27 lt 3 lw 1 notitle"
 echo "replot h(x) lc 27 lt 3 lw 1 notitle"
-echo "replot \"$f\" u (\$${c1}==0?1:\$$c1):(\$${c2}==0?1:\$$c2) title \"$title\" with points lc 1 pt 3"
+echo "replot \"$f\" u (\$${c1}==0?1:\$$c1):(\$${c2}==0?1:\$$c2) title \"$title\" with points lc 3 pt 3"
 
 echo "set term postscript eps enhanced color"
 echo "set output 'result.pdf'"
