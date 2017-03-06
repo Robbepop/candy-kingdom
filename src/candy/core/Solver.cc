@@ -112,7 +112,7 @@ Solver::Solver() :
 
                 ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), trail_size(0), qhead(
                                 0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
-                                12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
+                                12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), MYFLAG(0),
                 // Resource constraints:
                 //
                 conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
@@ -183,6 +183,7 @@ void Solver::addClauses(Candy::CNFProblem dimacs) {
         watchesBin.init(mkLit(v, false));
         watchesBin.init(mkLit(v, true));
         activity.push_back(dimacs.getRelativeOccurence(mkLit(v, false)) + dimacs.getRelativeOccurence(mkLit(v, true)));
+        //polarity.push_back(dimacs.getRelativeOccurence(mkLit(v, false)) - dimacs.getRelativeOccurence(mkLit(v, true)) > 0 ? true : false);
         polarity.push_back(true);
         setDecisionVar(v, true);
     }
@@ -229,6 +230,7 @@ bool Solver::addClause_(vector<Lit>& ps) {
     } else {
         Candy::Clause* cr = new (ps.size()) Candy::Clause(ps, false);
         clauses.push_back(cr);
+        sort(cr->begin(), cr->end(), [this](Lit lit1, Lit lit2) { return activity[var(lit1)] < activity[var(lit2)]; });
         attachClause(cr);
     }
 
@@ -1000,8 +1002,8 @@ lbool Solver::search(int nof_conflicts) {
                 if (cr->size() == 2)
                     nbBin++; // stats
                 learnts.push_back(cr);
+                sort(cr->begin()+1, cr->end(), [this](Lit lit1, Lit lit2) { return activity[var(lit1)] < activity[var(lit2)]; });
                 attachClause(cr);
-                lastLearntClause = cr;
                 claBumpActivity(*cr);
                 uncheckedEnqueue(learnt_clause[0], cr);
             }
@@ -1031,7 +1033,6 @@ lbool Solver::search(int nof_conflicts) {
                 }
             }
 
-            lastLearntClause = nullptr;
             Lit next = lit_Undef;
             while (decisionLevel() < assumptions.size()) {
                 // Perform user provided assumption:

@@ -234,7 +234,6 @@ public:
     double garbage_frac; // The fraction of wasted memory allowed before a garbage collection is triggered.
 
     // Certified UNSAT ( Thanks to Marijn Heule)
-    // TODO: use class member functions for certified output
     FILE* certifiedOutput;
     bool certifiedUNSAT;
 
@@ -336,12 +335,9 @@ protected:
 	// Used for restart strategies
 	bqueue<unsigned int> trailQueue, lbdQueue; // Bounded queues for restarts.
 	float sumLBD; // used to compute the global average of LBD. Restarts...
-	//int sumAssumptions;
-	Candy::Clause* lastLearntClause;
 
 	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
-	// used, exept 'seen' wich is used in several places.
-	//
+	// used, exept 'seen' wich is used in several places
 	vector<char> seen;
 	vector<Lit> analyze_stack;
 	vector<Lit> analyze_toclear;
