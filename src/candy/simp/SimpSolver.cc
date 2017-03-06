@@ -99,6 +99,20 @@ Var SimpSolver::newVar(bool sign, bool dvar) {
     return v;
 }
 
+void SimpSolver::addClauses(Candy::CNFProblem dimacs) {
+    frozen.resize(dimacs.nVars(), 0);
+    eliminated.resize(dimacs.nVars(), 0);
+    if (use_simplification) {
+        n_occ.resize(2*dimacs.nVars(), 0);
+        touched.resize(dimacs.nVars(), 0);
+        for (Var v = nVars(); v < (int)dimacs.nVars(); v++) {
+            occurs.init(v);
+            elim_heap.insert(v);
+        }
+    }
+    Solver::addClauses(dimacs);
+}
+
 lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
     vector<Var> extra_frozen;
     lbool result = l_True;

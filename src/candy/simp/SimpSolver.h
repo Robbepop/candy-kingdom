@@ -70,6 +70,7 @@ public:
     // Problem specification:
     //
     virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    virtual void addClauses(Candy::CNFProblem dimacs);
     bool addClause(const vector<Lit>& ps);
     bool addEmptyClause();                // Add the empty clause to the solver.
     bool addClause(Lit p);               // Add a unit clause to the solver.

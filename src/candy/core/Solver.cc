@@ -170,21 +170,23 @@ Var Solver::newVar(bool sign, bool dvar) {
 }
 
 void Solver::addClauses(Candy::CNFProblem dimacs) {
-    vector<vector<Lit>*>& problem = dimacs.getProblem();
-    if (dimacs.nVars() > nVars()) {
-        assigns.reserve(dimacs.nVars());
-        vardata.reserve(dimacs.nVars());
-        activity.reserve(dimacs.nVars());
-        seen.reserve(dimacs.nVars());
-        permDiff.reserve(dimacs.nVars());
-        polarity.reserve(dimacs.nVars());
-        decision.reserve(dimacs.nVars());
-        trail.resize(dimacs.nVars());
-        for (int i = nVars(); i < dimacs.nVars(); i++) {
-            newVar();
-        }
+    int max = nVars();
+    assigns.resize(dimacs.nVars(), l_Undef);
+    vardata.resize(dimacs.nVars(), mkVarData(nullptr, 0));
+    seen.resize(dimacs.nVars(), 0);
+    decision.resize(dimacs.nVars(), 0);
+    permDiff.resize(dimacs.nVars(), 0);
+    trail.resize(dimacs.nVars(), lit_Undef);
+    for (Var v = max; v < (int)dimacs.nVars(); v++) {
+        watches.init(mkLit(v, false));
+        watches.init(mkLit(v, true));
+        watchesBin.init(mkLit(v, false));
+        watchesBin.init(mkLit(v, true));
+        activity.push_back(dimacs.getRelativeOccurence(mkLit(v, false)) + dimacs.getRelativeOccurence(mkLit(v, true)));
+        polarity.push_back(true);
+        setDecisionVar(v, true);
     }
-    for (vector<Lit>* clause : problem) {
+    for (vector<Lit>* clause : dimacs.getProblem()) {
         addClause(*clause);
     }
 }

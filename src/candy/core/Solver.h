@@ -88,7 +88,7 @@ public:
     bool addClause(Lit p, Lit q); // Add a binary clause to the solver.
     bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
     virtual bool addClause_(vector<Lit>& ps); // Add a clause to the solver without making superflous internal copy. Will change ps
-    void addClauses(Candy::CNFProblem dimacs);
+    virtual void addClauses(Candy::CNFProblem dimacs);
 
     // use with care (written for solver tests only)
     Candy::Clause& getClause(unsigned int pos) {

@@ -30,134 +30,136 @@ namespace Candy {
 
 class CNFProblem {
 
-  For problem;
-  int maxVars = 0;
+    For problem;
+    unsigned int maxVars = 0;
 
-  int headerVars = 0;
-  int headerClauses = 0;
+    unsigned int headerVars = 0;
+    unsigned int headerClauses = 0;
+
+    bool occurenceNormalized = false;
+    std::vector<double> literalOccurence;
 
 public:
 
-  CNFProblem() { }
-
-  For& getProblem() {
-    return problem;
-  }
-    
-  const For& getProblem() const {
-    return problem;
-  }
-
-  int nVars() const {
-    return maxVars;
-  }
-
-  int nClauses() {
-    return (int)problem.size();
-  }
-
-  int newVar() {
-    maxVars++;
-    return maxVars-1;
-  }
-
-  bool readDimacsFromStdout() {
-    gzFile in = gzdopen(0, "rb");
-    if (in == NULL) {
-      printf("ERROR! Could not open file: <stdin>");
-      return false;
+    CNFProblem() {
     }
-    parse_DIMACS(in);
-    gzclose(in);
-    return true;
-  }
 
-  bool readDimacsFromFile(const char* filename) {
-    gzFile in = gzopen(filename, "rb");
-    if (in == NULL) {
-      printf("ERROR! Could not open file: %s\n", filename);
-      return false;
+    For& getProblem() {
+        return problem;
     }
-    parse_DIMACS(in);
-    gzclose(in);
-    return true;
-  }
 
-  void readClause(Lit plit) {
-    Cl* lits = new Cl();
-    lits->push_back(plit);
-    maxVars = std::max(maxVars, var(plit)+1);
-    problem.push_back(lits);
-  }
-
-  void readClause(Lit plit1, Lit plit2) {
-    Cl* lits = new Cl();
-    lits->push_back(plit1);
-    lits->push_back(plit2);
-    maxVars = std::max(maxVars, std::max(var(plit1),var(plit2))+1);
-    problem.push_back(lits);
-  }
-
-  void readClause(std::initializer_list<Lit> list) {
-    Cl* lits = new Cl(list);
-    maxVars = var(std::max(list))+1;
-    problem.push_back(lits);
-  }
-
-  void readClause(Cl& in) {
-    Cl* lits = new Cl(in);
-    maxVars = std::max(maxVars, var(*std::max_element(in.begin(), in.end()))+1);
-    problem.push_back(lits);
-  }
-
-  void readClauses(For& f) {
-    for (Cl* c : f) {
-      readClause(*c);
+    const For& getProblem() const {
+        return problem;
     }
-  }
 
+    unsigned int nVars() const {
+        return maxVars;
+    }
+
+    unsigned int nClauses() const {
+        return problem.size();
+    }
+
+    double getRelativeOccurence(Lit lit) {
+        if (!occurenceNormalized) {
+            double max = *std::max_element(literalOccurence.begin(), literalOccurence.end());
+            for (double& occ : literalOccurence) {
+                occ = occ / max;
+            }
+            occurenceNormalized = true;
+        }
+        return literalOccurence[lit];
+    }
+
+    bool readDimacsFromStdout() {
+        gzFile in = gzdopen(0, "rb");
+        if (in == NULL) {
+            printf("ERROR! Could not open file: <stdin>");
+            return false;
+        }
+        parse_DIMACS(in);
+        gzclose(in);
+        return true;
+    }
+
+    bool readDimacsFromFile(const char* filename) {
+        gzFile in = gzopen(filename, "rb");
+        if (in == NULL) {
+            printf("ERROR! Could not open file: %s\n", filename);
+            return false;
+        }
+        parse_DIMACS(in);
+        gzclose(in);
+        return true;
+    }
+
+    inline int newVar() {
+        literalOccurence.push_back(0);
+        literalOccurence.push_back(0);
+        return maxVars++;
+    }
+
+    inline void readClause(Cl& in) {
+        Cl* lits = new Cl(in);
+        for (Lit lit : *lits) {
+            while (var(lit) >= (int) maxVars) {
+                newVar();
+            }
+            literalOccurence[lit] += 1.0 / lits->size();
+            occurenceNormalized = false;
+        }
+        problem.push_back(lits);
+    }
+
+    void readClause(Lit plit) {
+        readClause({ plit });
+    }
+
+    void readClause(Lit plit1, Lit plit2) {
+        readClause({ plit1, plit2 });
+    }
+
+    void readClause(std::initializer_list<Lit> list) {
+        Cl clause(list);
+        readClause(clause);
+    }
 
 private:
 
-  void readClause(Glucose::StreamBuffer& in) {
-    Cl* lits = new Cl();
-    for (int plit = parseInt(in); plit != 0; plit = parseInt(in)) {
-      int var = abs(plit);
-      if (var > maxVars) maxVars = var;
-      lits->push_back(Glucose::mkLit(var-1, plit < 0));
+    void readClause(Glucose::StreamBuffer& in) {
+        Cl lits;
+        for (int plit = parseInt(in); plit != 0; plit = parseInt(in)) {
+            lits.push_back(Glucose::mkLit(abs(plit) - 1, plit < 0));
+        }
+        readClause(lits);
     }
-    problem.push_back(lits);
-  }
 
-  void parse_DIMACS(gzFile input_stream) {
-    Glucose::StreamBuffer in(input_stream);
-    skipWhitespace(in);
-    while (*in != EOF) {
-      if (*in == 'p') {
-        if (eagerMatch(in, "p cnf")) {
-          headerVars = parseInt(in);
-          headerClauses = parseInt(in);
-          problem.reserve(headerClauses);
+    void parse_DIMACS(gzFile input_stream) {
+        Glucose::StreamBuffer in(input_stream);
+        skipWhitespace(in);
+        while (*in != EOF) {
+            if (*in == 'p') {
+                if (eagerMatch(in, "p cnf")) {
+                    headerVars = parseInt(in);
+                    headerClauses = parseInt(in);
+                    problem.reserve(headerClauses);
+                } else {
+                    printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+                }
+            } else if (*in == 'c' || *in == 'p') {
+                skipLine(in);
+            } else {
+                readClause(in);
+            }
+            skipWhitespace(in);
         }
-        else {
-          printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+        if (headerVars != maxVars) {
+            fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
         }
-      }
-      else if (*in == 'c' || *in == 'p') {
-        skipLine(in);
-      }
-      else {
-        readClause(in);
-      }
-      skipWhitespace(in);
+        if (headerClauses != problem.size()) {
+            fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");
+        }
     }
-    if (headerVars != maxVars) {
-      fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
-    }
-    if (headerClauses != (int)problem.size()) {
-      fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");
-    }
-  }
 
 };
 
