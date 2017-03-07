@@ -183,8 +183,8 @@ void Solver::addClauses(Candy::CNFProblem dimacs) {
         watchesBin.init(mkLit(v, false));
         watchesBin.init(mkLit(v, true));
         activity.push_back(dimacs.getRelativeOccurence(mkLit(v, false)) + dimacs.getRelativeOccurence(mkLit(v, true)));
-        //polarity.push_back(dimacs.getRelativeOccurence(mkLit(v, false)) - dimacs.getRelativeOccurence(mkLit(v, true)) > 0 ? true : false);
-        polarity.push_back(true);
+        polarity.push_back(dimacs.getRelativeOccurence(mkLit(v, false)) - dimacs.getRelativeOccurence(mkLit(v, true)) > 0 ? true : false);
+        //polarity.push_back(true);
         setDecisionVar(v, true);
     }
     for (vector<Lit>* clause : dimacs.getProblem()) {
